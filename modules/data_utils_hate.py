@@ -17,162 +17,9 @@ def get_question(lab):
     #return f'Why {lab} ?'
     #return f'How {lab} ?'
     #return f'{lab}'
-    #return f'Why is "{lab}" the hatespeech sentiment just some words to increase the length?'
-    #return f'Why is "{lab}" the hate-speech class ?'
-    return f'Why is the text {lab} ?'
-    #return f'Why is "{lab}" a reason for not taking vaccines?'
-    #return f'Why is "{lab}" the class?'
-    #return f'What does the text say about the {lab}?'
-
-
-
-# %% DATA PREP
-
-
-def keyword_pos(text, keywords):
-    """
-    text: list of words
-    keywords: list of words (from one annotator only)
+    return f'Why is "{lab}" a reason for not taking vaccines?'
     
-    returns numpy array of size len(text), with 1s where the keywords are, and 0 elsewhere
-    """
-    assert type(text) is list and type(keywords) is list
 
-    keypairs = []
-    i = 0
-    while i < len(keywords):
-        j = -1
-        # find all places in text where this keyword is present, and try to get max keywords matching from there
-        while True:
-            try:
-                j = text.index(keywords[i], j + 1)
-                l = 0
-                while keywords[i + l] == text[j + l]:
-                    l += 1                                        
-                    if (i + l) >= len(keywords) or (j + l) >= len(text):
-                        break
-                keypairs.append([i, j, l])
-            except ValueError:
-                    break
-        i += 1
-    keypairs.sort(key = lambda x: x[2], reverse = True)
-    # form final vector
-    # assumption: if the starting word in a keyset is not yet selected, it was not part of any larger keysets
-    vector = np.zeros(len(text))
-    remaining = np.ones(len(keywords))
-    
-    for i, j, l in keypairs:
-            if remaining[i]:
-                    remaining[i : i + l] = 0
-                    vector[j : j + l] = 1
-
-    return vector
-
-
-def span_finder(highlights, use_only_max_length=False):
-    spans = []
-    for val in highlights:
-        sample_span = []
-        if len(val)!=0:
-            for tup in val:
-                t = tup[1].tolist()
-                start_idx = 0
-                indices = []
-                while start_idx < len(t):
-                    l = 1
-                    try:
-                        start_idx = t.index(1, start_idx)
-                        while True:
-                            if start_idx+l < len(t) and t[start_idx+l] == 1:
-                                l+=1
-                            else:
-                                end_idx = start_idx + l
-                                indices.append((start_idx, end_idx))
-                                start_idx = end_idx
-                                break
-                    except:
-                        if start_idx == 0:
-                            indices.append((0,0))
-                        break
-                if use_only_max_length:
-                    max_length_index = np.argmax([tup[1]-tup[0] for tup in indices])
-                    indices = [indices[max_length_index]]
-                sample_span.append(indices)
-            spans.append(sample_span)
-        else:
-            indices = [(0,0)]
-            sample_span.append(indices)
-            spans.append(sample_span)
-    return spans
-
-
-def keyword_position(keywords, tokenizer):
-    new_keywords = []
-    for keylist in keywords:
-        temp1 = [] # temp1  = [[k1_l1, k2_l1], [k1_l2, k2_l2]]
-        if len(keylist)!=0:
-            for key in keylist:
-                keys = key.split(';')
-                processed_keys = [preprocess_and_tokenize(k, tokenizer)[1:-1] for k in keys]
-                temp1.append(processed_keys)
-        else:
-            pass
-        new_keywords.append(temp1)
-    return new_keywords
-
-
-# In[ ]:
-
-
-def preprocess(txt):
-    # print(txt)
-    txt = html.unescape(txt.lower())
-    txt = re.sub("https://\S+", "HTTPURL", txt)
-    
-    #removing everything except alphanumeric and spaces
-    txt = re.sub('[^\w\s]', ' ', txt)
-    txt = re.sub('\s+', ' ', txt)
-    
-    return txt
-
-def preprocess_and_tokenize(txt, tokenizer):
-    # print(txt)
-    txt = html.unescape(txt.lower())
-    txt = re.sub("https://\S+", "URL", txt)
-    
-    #removing everything except alphanumeric and spaces
-    txt = re.sub('[^\w\s]', ' ', txt)
-    txt = re.sub('\s+', ' ', txt)
-    
-    return tokenizer(txt).input_ids
-
-
-def get_label_highlight(text_ids, keywords, labels, ALL_LABELS):        
-    highlights = []
-    # for each data point / tweet        
-    for txt, key, lab in zip(text_ids, keywords, labels):
-        lab_key = {}    
-        # for each label in a data point
-        for k, l in zip(key, lab):
-            veclist = []         
-            # keywords for different annotators
-            for x in k:
-                tmp = keyword_pos(txt, x)
-                veclist.append(tmp)                  
-            # COMBINE vectors
-            vector = np.zeros(len(txt))
-            for vec in veclist:
-                  vector = vector + vec                   
-            #tot = len(veclist) if len(veclist) == 1 or l in ['none'] else 1
-            tot = len(veclist) if len(veclist) == 1 else 1
-            lab_key[l] = (vector >= tot)             
-        tmp = [(l, 1*lab_key[l].astype(bool)) for l in ALL_LABELS if l in lab_key]
-        highlights.append(tmp)
-    
-    return highlights
-
-
-# In[]
 
 
 def fix_tokenizer_issue(keywords):
@@ -193,94 +40,35 @@ def get_conditional_data(filename, dataset):
     
     df = pd.read_csv(filename)
     
-    if dataset == 'caves':
-        labels = df[['label1', 'label2', 'label3']].values.tolist()
-        labels = [[i for i in sample_labels if i is not np.nan] for sample_labels in labels]
-    else:
-        labels = df['label'].tolist()
-        labels = [[i] for i in labels]
     
-    if dataset == 'caves':
-        keywords = df[['Keyword for Sentiment 1', 'Keyword for Sentiment 2', 'Keyword for Sentiment 3']].values.tolist()
-        keywords = [[i for i in sublist if i is not np.nan] for sublist in keywords]
-    else:
-        keywords = df['keyword'].tolist()
-        keywords = [[i] if i is not np.nan else [] for i in keywords]
+    labels = df[['label1', 'label2', 'label3']].values.tolist()
+    labels = [[i for i in sample_labels if i is not np.nan] for sample_labels in labels]
     
-    keywords = fix_tokenizer_issue(keywords)
-    if dataset == 'caves':
-        tweets = df['temp'].tolist()
-    else: 
-        tweets = df['text'].tolist()
     
-    if dataset == '14lap':
-        aspects = df['aspect'].tolist()
-    else:
-        aspects = [None for i in range(len(tweets))]
+    keywords = df[['Keyword for Sentiment 1', 'Keyword for Sentiment 2', 'Keyword for Sentiment 3']].values.tolist()
+    keywords = [[i for i in sublist if i is not np.nan] for sublist in keywords]
 
+    keywords = fix_tokenizer_issue(keywords)
+
+    tweets = df['temp'].tolist()
+    
+    
     data = []
-    for lab, key, twt, a in zip(labels, keywords, tweets, aspects):
+    for lab, key, twt in zip(labels, keywords, tweets):
         temp = {}
         temp['tweet_text'] = twt
         temp['keyword'] = key
         temp['labels'] = lab
-        if a is not None:
-            temp['aspect'] = a
         data.append(temp)
     return data
 
-
-def get_fractional_conditional_data(filename, frac, dataset):
-    
-    df = pd.read_csv(filename)
-    
-    if dataset == 'caves':
-        labels = df[['label1', 'label2', 'label3']].values.tolist()
-        labels = [[i for i in sample_labels if i is not np.nan] for sample_labels in labels]
-    else:
-        labels = df['label'].tolist()
-        labels = [[i] for i in labels]
-    
-    if dataset == 'caves':
-        keywords = df[['Keyword for Sentiment 1', 'Keyword for Sentiment 2', 'Keyword for Sentiment 3']].values.tolist()
-        keywords = [[i for i in sublist if i is not np.nan] for sublist in keywords]
-    else:
-        keywords = df['keyword'].tolist()
-        keywords = [[i] if i is not np.nan else [] for i in keywords]
-    
-    keywords = fix_tokenizer_issue(keywords)
-    if dataset == 'caves':
-        tweets = df['temp'].tolist()
-    else: 
-        tweets = df['text'].tolist()
-    
-    if dataset == '14lap':
-        aspects = df['aspect'].tolist()
-    else:
-        aspects = [None for i in range(len(tweets))]
-
-
-    indices = set(random.sample(range(len(tweets)), int(frac * len(tweets))))
-    
-    data = []
-    for i, (lab, key, twt, a) in enumerate(zip(labels, keywords, tweets, aspects)):
-        if i in indices:
-            temp = {}
-            temp['tweet_text'] = twt
-            temp['keyword'] = key
-            temp['labels'] = lab
-            if a is not None:
-                temp['aspect'] = a
-            data.append(temp)
-
-    return data
 
 def conditional_union_data(data:list, 
                            tokenizer,
                            max_span_only=True, 
                            is_bert=False,
                            num_neg_samples=2,
-                           dataset='14lap',
+                           dataset='caves',
                            use_none=False
                            ):
     '''
@@ -332,140 +120,6 @@ def conditional_union_data(data:list,
             tokenized_tweet[0].extend([100, 102])
             null_token_id = len(tokenized_tweet[0]) - 2
 
-        # if len(labels)==3: #[political, country, mandatory]
-            
-        #     original_tokenized_tweet = tokenized_tweet[0].copy()
-        #     tokenized_tweet = tokenized_tweet[0].copy()
-
-        #     if True:
-        #         for lab in labels:
-        #             for high, spans in zip(highlights, keyword_spans):
-        #                 for tup, span in zip(high, spans):
-        #                     if tup[0] == lab:
-        #                         #question = f'Why is \"{lab}\" a reason for not taking vaccines?'
-        #                         question = f'Why {lab} ?'
-        #                         question = tokenizer(question).input_ids[1:-1]
-                                
-        #                         tokenized_tweet.extend(question)
-                                            
-        #                         tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-        #                         tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-        #                         tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-        #                         tweet_labels.append(lab)
-                                
-        #                         start_token.append(span[0][0])
-        #                         end_token.append(span[0][1])
-                                
-        #                         tokenized_tweet = original_tokenized_tweet.copy()
-
-        #     if dataset == 'caves' and use_none:
-        #         negative_labels = ['none']
-        #     else:
-        #         negative_labels = []
-            
-        #     if dataset == 'caves':
-        #         if use_none:
-        #             labels_ = [i for i in ALL_LABELS if i!='none' and i not in labels]
-        #         else:
-        #             labels_ = [i for i in ALL_LABELS if i not in labels]
-        #     else:
-        #         labels_ = [i for i in ALL_LABELS if i not in labels]
-
-        #     if use_none:
-        #         negative_labels.extend(np.random.choice(labels_, num_neg_samples - 1, False).tolist())
-        #     else:
-        #         negative_labels.extend(np.random.choice(labels_, num_neg_samples, False).tolist())
-
-        #     for neg in negative_labels:
-                
-        #         #question = f'Why is \"{neg}\" a reason for not taking vaccines?'
-        #         question = f'Why {neg} ?'
-        #         question = tokenizer(question).input_ids[1:-1]
-                
-        #         tokenized_tweet.extend(question)
-                
-        #         tweet_text.append(tokenizer.decode(tokenized_tweet))
-                
-        #         tokenized_tweet_with_question.append(tokenized_tweet)
-                
-        #         tokenized_keywords.append('')
-                
-        #         tweet_labels.append(neg)
-                
-        #         start_token.append(null_token_id)
-        #         end_token.append(null_token_id)
-                
-        #         tokenized_tweet = original_tokenized_tweet.copy()
-        
-        # elif len(labels)==2:
-            
-        #     original_tokenized_tweet = tokenized_tweet[0].copy()
-        #     tokenized_tweet = tokenized_tweet[0].copy()
-            
-        #     if True:
-        #         for lab in labels:
-        #             for high, spans in zip(highlights, keyword_spans):
-        #                 for tup, span in zip(high, spans):
-        #                     if tup[0] == lab:
-        #                         #question = f'Why is \"{lab}\" a reason for not taking vaccines?'
-        #                         question = f'Why {lab} ?'
-        #                         question = tokenizer(question).input_ids[1:-1]
-                                
-        #                         tokenized_tweet.extend(question)
-                                            
-        #                         tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-        #                         tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-        #                         tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-        #                         tweet_labels.append(lab)
-                                
-        #                         start_token.append(span[0][0])
-        #                         end_token.append(span[0][1])
-                                
-        #                         tokenized_tweet = original_tokenized_tweet.copy()
-
-        #     if dataset == 'caves' and use_none:
-        #         negative_labels = ['none']
-        #     else:
-        #         negative_labels = []
-            
-        #     if dataset == 'caves':
-        #         if use_none:
-        #             labels_ = [i for i in ALL_LABELS if i!='none' and i not in labels]
-        #         else:
-        #             labels_ = [i for i in ALL_LABELS if i not in labels]
-        #     else:
-        #         labels_ = [i for i in ALL_LABELS if i not in labels]
-
-        #     if use_none:
-        #         negative_labels.extend(np.random.choice(labels_, num_neg_samples - 1, False).tolist())
-        #     else:
-        #         negative_labels.extend(np.random.choice(labels_, num_neg_samples, False).tolist())
-
-        #     for neg in negative_labels:
-                
-        #         #question = f'Why is \"{neg}\" a reason for not taking vaccines?'
-        #         question = f'Why {neg} ?'
-        #         question = tokenizer(question).input_ids[1:-1]
-                
-        #         tokenized_tweet.extend(question)
-                
-        #         tweet_text.append(tokenizer.decode(tokenized_tweet))
-        #         tokenized_tweet_with_question.append(tokenized_tweet)
-                
-        #         tokenized_keywords.append('')
-                
-        #         tweet_labels.append(neg)
-                
-        #         start_token.append(null_token_id)
-        #         end_token.append(null_token_id)
-                
-        #         tokenized_tweet = original_tokenized_tweet.copy()
         
         if labels[0] != 'none' and labels[0] != 'normal':           
             
@@ -481,16 +135,6 @@ def conditional_union_data(data:list,
                         if tup[0] == lab:
                             question = get_question(lab)
                             # question = f'Why {lab} ?'
-
-                            '''
-                            if dataset == 'caves':
-                                question = f"Why is \"{lab}\" a reason for not taking vaccines?"
-                            elif dataset =='14lap' or ('res' in dataset.split()):
-                                question = f'Why is the sentiment \"{lab}\"?'
-                            else:
-                                question = f'Why is the sentence \"{lab}\"?'
-
-                            '''
                                 
                             
                             question = tokenizer(question).input_ids[1:-1]
@@ -531,16 +175,6 @@ def conditional_union_data(data:list,
                 question = get_question(neg)
                 # question = f'Why {neg} ?'
 
-                '''
-                if dataset == 'caves':
-                    question = f'Why is \"{neg}\" a reason for not taking vaccines?'
-                elif dataset == '14lap' or ('res' in dataset.split()):
-                    question = f'Why is the sentiment \"{neg}\"?'
-                else:
-                    question = f'Why is the sentence \"{neg}\"?'
-                '''
-
-                
                 question = tokenizer(question).input_ids[1:-1]
                 
                 tokenized_tweet.extend(question)
@@ -563,13 +197,11 @@ def conditional_union_data(data:list,
             
             if dataset == 'caves':
                 question = get_question('none')
-                # question = "Why none ?"
-                #question = f"Why is \"none\" a reason for not taking vaccines?"
+                
             else:
                 question = get_question('normal')
-                # question = "Why normal ?"
-                #question = f'Why is the sentence \"normal\"?'
-            
+                
+
             question = tokenizer(question).input_ids[1:-1]
             
             tokenized_tweet.extend(question)
@@ -596,14 +228,7 @@ def conditional_union_data(data:list,
             
             for neg in negative_labels:
                 question = get_question(neg)
-                # question = f'Why {neg} ?'
-                '''
-                if dataset == 'caves':
-                    question = f'Why is \"{neg}\" a reason for not taking vaccines?'
-                else:
-                    question = f'Why is the sentence \"{neg}\"?'
-                   ''' 
-
+                
                 question = tokenizer(question).input_ids[1:-1]
                 
                 tokenized_tweet.extend(question)
@@ -621,7 +246,11 @@ def conditional_union_data(data:list,
                 
                 tokenized_tweet = original_tokenized_tweet.copy()
 
-    return tokenized_tweet_with_question, tweet_text, tweet_labels, tokenized_keywords, start_token, end_token
+    
+    json_data = {'tokenized_text': tokenized_tweet_with_question, 'text': tweet_text, 'labels': tweet_labels, 
+                 'tokenized_keywords': tokenized_keywords, 'start_tokens': start_token, 'end_tokens': end_token}
+    return json_data
+
 
 
 # %% LOADING DATA
@@ -636,41 +265,6 @@ def fix_end_token(end_tokens, start_tokens):
         else: end_token.append(end-1)
     return end_token
 
-def load_data_from_file(filename):
-    if filename.split('/')[-2] == 'train':
-        f= open(filename+'train_labels.json')
-        labels = json.load(f)
-        f= open(filename+'train_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'train_start_tokens.json')
-        start_token = json.load(f)
-        f= open(filename+'train_end_tokens.json')
-        end_token = json.load(f)
-        end_token = fix_end_token(end_token, start_token)
-        f= open(filename+'train_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, start_token, end_token, keywords, labels
-    elif filename.split('/')[-2] == 'val':
-        f= open(filename+'val_labels.json')
-        labels = json.load(f)
-        f= open(filename+'val_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'val_start_tokens.json')
-        start_token = json.load(f)
-        f= open(filename+'val_end_tokens.json')
-        end_token = json.load(f)
-        end_token = fix_end_token(end_token, start_token)
-        f= open(filename+'val_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, start_token, end_token, keywords, labels
-    else:
-        f= open(filename+'test_labels.json')
-        labels = json.load(f)
-        f= open(filename+'test_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'test_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, keywords, labels
 
 
 
@@ -737,15 +331,6 @@ def get_test_data(testfile=None,
         for lab in ALL_LABELS:
             question = get_question(lab)
             # question = f'Why {lab} ?'
-            '''
-            if dataset == 'caves':
-                question = f'Why is  \"{lab}\" a reason for not taking vaccines?'
-            elif dataset =='14lap' or ('res' in dataset.split()):
-                question = f'Why is the sentiment \"{lab}\"?'
-            else:
-                question = f'Why is the sentence \"{lab}\"?'
-                
-            '''
 
             question = tokenizer(question).input_ids[1:-1]
             
@@ -817,7 +402,6 @@ def dataloader(tweets, keywords=None, start_tokens=None, end_tokens=None, tokeni
     
     attn = [[1 for i in range(len(tweets[j]))] for j in range(len(tweets))]
     
-    # tweets = pad_sequences(tweets, padding='post', value=tokenizer.pad_token_id)
     tweets = pad_sequence([torch.LongTensor(x) for x in tweets], batch_first = True, padding_value = tokenizer.pad_token_id)
     
     keywords_final = []
@@ -831,7 +415,6 @@ def dataloader(tweets, keywords=None, start_tokens=None, end_tokens=None, tokeni
             else:
                 keywords_final.append(k)
         
-        # keywords_final = pad_sequences(keywords_final, padding='post', value=tokenizer.pad_token_id)
         keywords_final = pad_sequence([torch.LongTensor(x) for x in keywords_final], batch_first = True, padding_value = tokenizer.pad_token_id)
         
         keywords_final = torch.tensor(keywords_final)
