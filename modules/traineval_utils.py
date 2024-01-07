@@ -72,10 +72,7 @@ def best_logit_score(start_logit, end_logit, n_best, max_answer_length):
             # Skip answers with a length that is either < 0 or > max_answer_length.
             if (end_index < start_index or end_index - start_index + 1 > max_answer_length):
                 continue
-            '''if end_index < start_index:
-                end_index = start_index
-            if  end_index - start_index + 1 > max_answer_length:
-                continue'''
+            
             answers.append({"logit_score": start_logit[start_index] + end_logit[end_index],
                             "start": start_index,
                             "end": end_index})

@@ -137,15 +137,9 @@ def evaluate(model, test_samples, tokenizer, params):
         precision = out['correct_count']  / out['pred_count']
         recall = out['correct_count'] / out['true_count']
         f1 = (2 * precision * recall) / (precision + recall + 1e-8)
-        print(f1)
+        
+        print("Pre, Rec, F1:")
         print(precision)
         print(recall)
+        print(f1)
         
-        print('\n')
-        
-        print(f1_score(out['true_labels'], out['pred_labels'], average='macro'))
-        print(f1_score(out['true_labels'], out['pred_labels'], average='weighted'))
-        print(accuracy_score(out['true_labels'], out['pred_labels']))
-        
-        print(jaccard_score(out['true_labels'], out['pred_labels'], average='samples'))
-

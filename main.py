@@ -10,19 +10,13 @@ from modules.eval import evaluate
 DATASET_NAME = 'caves' # 'hatexplain'
 
 
-test = '../CAVES_data/test.csv'
+DATADIR = './data_' + DATASET_NAME
 
-TRAINDIR = './data_' + DATASET_NAME + '/train/'
-VALDIR = './data_' + DATASET_NAME + '/val/'
-
-
-
-
-################################################################################
-################################################################################
+#########################################################
+#########################################################
 # %% Define Parameters, Tokenizer, Model and Dataloaders:
-################################################################################
-################################################################################
+#########################################################
+#########################################################
 
 
 params = {}
@@ -40,6 +34,7 @@ params['num_neg_samples'] = 3 # NUMBER OF NEGATIVE SAMPLES BEING USED PER SAMPLE
 params['modelname'] = 'ct_bert' # NAME USED TO SAVE THE MODEL
 
 
+ 
 model_save_path = './data_%s/models/%s_neg_%d_BS_%d/'%(params['dataset'], params['modelname'], params['num_neg_samples'], params['batch_size'] * params['num_grad_acc_step'])
                                
 
@@ -49,28 +44,29 @@ if not os.path.exists(model_save_path):
 params['model_save_path'] = model_save_path
 
 
+#########################################################
+#########################################################
+# %% Initialize models, load data:
+#########################################################
+#########################################################
 
 #tokenizer = AutoTokenizer.from_pretrained('roberta-large')
 tokenizer = AutoTokenizer.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
-#tokenizer = AutoTokenizer.from_pretrained('bert-large-uncased-whole-word-masking-finetuned-squad')
 
 seed()
 
-# model = AutoModelForQuestionAnswering.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
-# model = model.to(params['device'])
+model = AutoModelForQuestionAnswering.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
+model = model.to(params['device'])
 
 
-
-test_samples = get_test_data(test, # TEST CSV FILE LOCATION
-                            tokenizer, 
-                            is_testing=True, # ALWAYS SET TO TRUE
-                            is_bert=True, # TRUE FOR BERT AND FALSE FOR ROBERTA AND OTHER MODELS.
-                            dataset=params['dataset']) # 'caves' for covax, 'hatexplain' for hatexplain dataset and similarly for lap & res
+with open(os.path.join(DATADIR, 'train_data.json')) as f:
+    data = json.load(f)
+    train_tweet, train_start_token, train_end_token, train_keyword, train_labels = [data[x] for x in ['tokenized_text', 'start_tokens', 'end_tokens', 'tokenized_keywords', 'labels']]
 
 
-
-train_tweet, train_start_token, train_end_token, train_keyword, train_labels = load_data_from_file(TRAINDIR)
-val_tweet, val_start_token, val_end_token, val_keyword, val_labels =  load_data_from_file(VALDIR)
+with open(os.path.join(DATADIR, 'val_data.json')) as f:
+    data = json.load(f)
+    val_tweet, val_start_token, val_end_token, val_keyword, val_labels = [data[x] for x in ['tokenized_text', 'start_tokens', 'end_tokens', 'tokenized_keywords', 'labels']]
 
 
 train_dataloader = dataloader(tweets=train_tweet, 
@@ -86,6 +82,10 @@ val_dataloader = dataloader(tweets=val_tweet,
                             tokenizer=tokenizer, 
                             params=params, 
                             is_train=False)
+
+
+with open(os.path.join(DATADIR, 'test_data.json')) as f:
+    test_samples = json.load(f)
 
 
 
@@ -111,7 +111,12 @@ print(total_steps)
 
 
 
-#%% TRAIN and TEST
+#########################################################
+#########################################################
+# %% Train and test
+#########################################################
+#########################################################
+
 
 train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
 

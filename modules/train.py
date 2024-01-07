@@ -7,11 +7,6 @@ from .traineval_utils import save_model
 def validate(val_dataloader, model, params, epoch, n_best,
              max_answer_length, lowest_val_loss=None):
     
-    # pred_answers = []
-    # org_start_id = []
-    # org_end_id = []
-    # inputs = []
-
     epoch_loss = 0
     num_samples = 0
     

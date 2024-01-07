@@ -11,7 +11,7 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 
 # %% DATA PREP
 
-
+'''
 def keyword_pos(text, keywords):
     """
     text: list of words
@@ -102,11 +102,11 @@ def keyword_position(keywords, tokenizer):
             pass
         new_keywords.append(temp1)
     return new_keywords
-
+'''
 
 # In[ ]:
 
-
+'''
 def preprocess(txt):
     # print(txt)
     txt = html.unescape(txt.lower())
@@ -153,7 +153,7 @@ def get_label_highlight(text_ids, keywords, labels, ALL_LABELS):
         highlights.append(tmp)
     
     return highlights
-
+'''
 
 # In[]
 
@@ -213,12 +213,10 @@ def get_conditional_data(filename, dataset):
 
 def conditional_union_data(data:list, 
                            tokenizer,
-                           max_span_only=True, 
                            is_bert=False,
                            num_neg_samples=2,
-                           dataset='14lap',
-                           use_none=False,
-                           joint_qna=True):
+                           dataset='caves',
+                           use_none=False):
     '''
     data: list of dict with keys = ['tweet_text', 'spans', 'lables']
     Given lbl1 and lbl2 are valid reasons, why is lbl3 also a reason for not taking vaccines?
@@ -272,61 +270,28 @@ def conditional_union_data(data:list,
             
             original_tokenized_tweet = tokenized_tweet[0].copy()
             tokenized_tweet = tokenized_tweet[0].copy()
-
-            if joint_qna:
-                label_combos = [comb for comb in itertools.combinations(labels, 2)] # [(political, mandatory), (country, mandatory), (political, country)]
-                
-                for tuples in label_combos: 
-                    
-                    given_labels = list(tuples) # [political, mandatory]
-                    
-                    label_for_prediction = [i for i in labels if i not in given_labels] # country
-                    
-                    for high, spans in zip(highlights, keyword_spans):
-                        
-                        for tup, span in zip(high, spans):
+            
+            for lab in labels:
+                for high, spans in zip(highlights, keyword_spans):
+                    for tup, span in zip(high, spans):
+                        if tup[0] == lab:
+                            question = f'Why is \"{lab}\" a reason for not taking vaccines?'
+                            question = tokenizer(question).input_ids[1:-1]
                             
-                            if tup[0] == label_for_prediction[0]:
-                                
-                                question = f'Given \"{given_labels[0]}\" and \"{given_labels[1]}\" are valid reasons, why is \"{label_for_prediction[0]}\" also a reason for not taking vaccines?'
-                                question = tokenizer(question).input_ids[1:-1]
-                                
-                                tokenized_tweet.extend(question)
-                                
-                                tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-                                tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-                                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-                                tweet_labels.append(label_for_prediction[0])
-                                
-                                start_token.append(span[0][0])
-                                end_token.append(span[0][1])
-                                
-                                tokenized_tweet = original_tokenized_tweet.copy()
-            else:
-                for lab in labels:
-                    for high, spans in zip(highlights, keyword_spans):
-                        for tup, span in zip(high, spans):
-                            if tup[0] == lab:
-                                question = f'Why is \"{lab}\" a reason for not taking vaccines?'
-                                question = tokenizer(question).input_ids[1:-1]
-                                
-                                tokenized_tweet.extend(question)
-                                            
-                                tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-                                tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-                                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-                                tweet_labels.append(lab)
-                                
-                                start_token.append(span[0][0])
-                                end_token.append(span[0][1])
-                                
-                                tokenized_tweet = original_tokenized_tweet.copy()
+                            tokenized_tweet.extend(question)
+                                        
+                            tweet_text.append(tokenizer.decode(tokenized_tweet))
+                            
+                            tokenized_tweet_with_question.append(tokenized_tweet)
+                            
+                            tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
+                            
+                            tweet_labels.append(lab)
+                            
+                            start_token.append(span[0][0])
+                            end_token.append(span[0][1])
+                            
+                            tokenized_tweet = original_tokenized_tweet.copy()
 
             if dataset == 'caves' and use_none:
                 negative_labels = ['none']
@@ -371,56 +336,28 @@ def conditional_union_data(data:list,
             original_tokenized_tweet = tokenized_tweet[0].copy()
             tokenized_tweet = tokenized_tweet[0].copy()
             
-            if joint_qna:
-                for lab in labels:
-                    
-                    given_label = [i for i in labels if i!=lab]
-                    
-                    for high, spans in zip(highlights, keyword_spans):
-                        
-                        for tup, span in zip(high, spans):
+            
+            for lab in labels:
+                for high, spans in zip(highlights, keyword_spans):
+                    for tup, span in zip(high, spans):
+                        if tup[0] == lab:
+                            question = f'Why is \"{lab}\" a reason for not taking vaccines?'
+                            question = tokenizer(question).input_ids[1:-1]
                             
-                            if tup[0] == lab:
-                                
-                                question = f'Given \"{given_label[0]}\" is a valid reason, why is \"{lab}\" also a reason for not taking vaccines?'
-                                question = tokenizer(question).input_ids[1:-1]
-                                
-                                tokenized_tweet.extend(question)
-                                
-                                tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-                                tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-                                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-                                tweet_labels.append(lab)
-                                
-                                start_token.append(span[0][0])
-                                end_token.append(span[0][1])
-                                
-                                tokenized_tweet = original_tokenized_tweet.copy()
-            else:
-                for lab in labels:
-                    for high, spans in zip(highlights, keyword_spans):
-                        for tup, span in zip(high, spans):
-                            if tup[0] == lab:
-                                question = f'Why is \"{lab}\" a reason for not taking vaccines?'
-                                question = tokenizer(question).input_ids[1:-1]
-                                
-                                tokenized_tweet.extend(question)
-                                            
-                                tweet_text.append(tokenizer.decode(tokenized_tweet))
-                                
-                                tokenized_tweet_with_question.append(tokenized_tweet)
-                                
-                                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
-                                
-                                tweet_labels.append(lab)
-                                
-                                start_token.append(span[0][0])
-                                end_token.append(span[0][1])
-                                
-                                tokenized_tweet = original_tokenized_tweet.copy()
+                            tokenized_tweet.extend(question)
+                                        
+                            tweet_text.append(tokenizer.decode(tokenized_tweet))
+                            
+                            tokenized_tweet_with_question.append(tokenized_tweet)
+                            
+                            tokenized_keywords.append(tokenizer.decode(tokenized_tweet[span[0][0]:span[0][1]]))
+                            
+                            tweet_labels.append(lab)
+                            
+                            start_token.append(span[0][0])
+                            end_token.append(span[0][1])
+                            
+                            tokenized_tweet = original_tokenized_tweet.copy()
 
             if dataset == 'caves' and use_none:
                 negative_labels = ['none']
@@ -594,8 +531,9 @@ def conditional_union_data(data:list,
                 end_token.append(null_token_id)
                 
                 tokenized_tweet = original_tokenized_tweet.copy()
-
-    return tokenized_tweet_with_question, tweet_text, tweet_labels, tokenized_keywords, start_token, end_token
+    json_data = {'tokenized_text': tokenized_tweet_with_question, 'text': tweet_text, 'labels': tweet_labels, 
+                 'tokenized_keywords': tokenized_keywords, 'start_tokens': start_token, 'end_tokens': end_token}
+    return json_data
 
 
 # %% LOADING DATA
@@ -609,42 +547,6 @@ def fix_end_token(end_tokens, start_tokens):
         #elif end-start ==1: end_token.append(end)
         else: end_token.append(end-1)
     return end_token
-
-def load_data_from_file(filename):
-    if filename.split('/')[-2] == 'train':
-        f= open(filename+'train_labels.json')
-        labels = json.load(f)
-        f= open(filename+'train_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'train_start_tokens.json')
-        start_token = json.load(f)
-        f= open(filename+'train_end_tokens.json')
-        end_token = json.load(f)
-        end_token = fix_end_token(end_token, start_token)
-        f= open(filename+'train_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, start_token, end_token, keywords, labels
-    elif filename.split('/')[-2] == 'val':
-        f= open(filename+'val_labels.json')
-        labels = json.load(f)
-        f= open(filename+'val_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'val_start_tokens.json')
-        start_token = json.load(f)
-        f= open(filename+'val_end_tokens.json')
-        end_token = json.load(f)
-        end_token = fix_end_token(end_token, start_token)
-        f= open(filename+'val_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, start_token, end_token, keywords, labels
-    else:
-        f= open(filename+'test_labels.json')
-        labels = json.load(f)
-        f= open(filename+'test_keywords.json')
-        keywords = json.load(f)
-        f= open(filename+'test_tokenized_twt.json')
-        tweet = json.load(f)
-        return tweet, keywords, labels
 
 
 
