@@ -24,14 +24,14 @@ params = {}
 params['device'] = 'cuda'
 params['dataset'] = DATASET_NAME # THE DATASET BEING USED.
 params['batch_size'] = 32 # DO NOT CHANGE THIS, MAKES CHANGES TO THE GRADIENT ACCUMULATION STEPS FOR INCREASING THE BATCH SIZE
-params['learning_rate'] = 1e-05 #2e-5 # DEFAULT IS 3e-05
+params['learning_rate'] = 2e-05 #2e-5 # DEFAULT IS 3e-05
 params['epsilon'] = 1e-8
 params['weight_decay'] = 0 #0.01
 params['num_epochs'] = 10 
 params['n_best'] = 20 # NUMBER OF TOP CANDIDATES TO CONSIDER FOR START + END INDEX LOGIT CALCULATION, DEFAULT = 10 (preferably do not lower)
-params['max_answer_length'] = 17 # THE MAXIMUM DIFFERENCE BETWEEN THE START AND END INDEX (CHANGES BASED ON THE DATASET BEING USED)
+params['max_answer_length'] = 20 # THE MAXIMUM DIFFERENCE BETWEEN THE START AND END INDEX (CHANGES BASED ON THE DATASET BEING USED)
 params['num_grad_acc_step'] = 2
-params['num_neg_samples'] = 3 # NUMBER OF NEGATIVE SAMPLES BEING USED PER SAMPLE FOR TRAINING (SHOULD BE EQUAL TO THE ONE USED DURING INPUT FILE CREATION)
+params['num_neg_samples'] = 5 # NUMBER OF NEGATIVE SAMPLES BEING USED PER SAMPLE FOR TRAINING (SHOULD BE EQUAL TO THE ONE USED DURING INPUT FILE CREATION)
 params['modelname'] = 'ct_bert' # NAME USED TO SAVE THE MODEL
 
 

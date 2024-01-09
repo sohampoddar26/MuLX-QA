@@ -61,6 +61,8 @@ def train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
             
             tr_loss = 0
             num_train_samples = 0
+
+            optimizer.zero_grad()
             
             # TRAINING STEP
             for step, batch in enumerate(train_dataloader):
@@ -68,7 +70,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
                 batch = tuple(t.to(params['device']) for t in batch)
                 b_input_ids, b_attn_mask, b_start_ids, b_end_ids = batch
                 
-                optimizer.zero_grad()
                 
                 output = model(input_ids=b_input_ids,
                                attention_mask=b_attn_mask,
@@ -85,15 +86,17 @@ def train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
                 
                 loss.backward()
                 
-                if step % print_every == 0:
-                    print('Loss: ', print_loss / print_steps)
-                    print_loss = 0
-                    print_steps = 0
+                # if step % print_every == 0:
+                #     print('Loss: ', print_loss / print_steps)
+                #     print_loss = 0
+                #     print_steps = 0
                 
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 if (step + 1) % params['num_grad_acc_step'] == 0 or (step + 1) == len(train_dataloader):
                     optimizer.step()
                     scheduler.step()
+
+                    optimizer.zero_grad()
             
             epoch_train_loss = tr_loss / num_train_samples
             train_loss_set.append(epoch_train_loss)

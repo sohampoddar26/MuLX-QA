@@ -9,9 +9,9 @@ DATASET_NAME = 'caves'
 tokenizer = AutoTokenizer.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
 
 
-train= './CAVES_data/train.json'
-test = './CAVES_data/test.json'
-val = './CAVES_data/val.json'
+train = '../caves-data/labelled_tweets/json_labels_explanations/train.json'
+test = '../caves-data/labelled_tweets/json_labels_explanations/test.json'
+val = '../caves-data/labelled_tweets/json_labels_explanations/val.json'
 
 
 DATADIR = './data_' + DATASET_NAME 
