@@ -1,6 +1,7 @@
 import os
+import json
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AdamW, get_linear_schedule_with_warmup
-from modules.data_utils import load_data_from_file, get_test_data, dataloader
+from modules.data_utils import dataloader
 from modules.traineval_utils import seed
 
 from modules.train import train
@@ -22,8 +23,8 @@ DATADIR = './data_' + DATASET_NAME
 params = {}
 params['device'] = 'cuda'
 params['dataset'] = DATASET_NAME # THE DATASET BEING USED.
-params['batch_size'] = 16 # DO NOT CHANGE THIS, MAKES CHANGES TO THE GRADIENT ACCUMULATION STEPS FOR INCREASING THE BATCH SIZE
-params['learning_rate'] = 5e-06 #2e-5 # DEFAULT IS 3e-05
+params['batch_size'] = 32 # DO NOT CHANGE THIS, MAKES CHANGES TO THE GRADIENT ACCUMULATION STEPS FOR INCREASING THE BATCH SIZE
+params['learning_rate'] = 1e-05 #2e-5 # DEFAULT IS 3e-05
 params['epsilon'] = 1e-8
 params['weight_decay'] = 0 #0.01
 params['num_epochs'] = 10 

@@ -1,4 +1,4 @@
-import os, json
+import os, json, re
 from transformers import AutoTokenizer
 from modules.data_utils import get_conditional_data, conditional_union_data, get_test_data
 
@@ -9,16 +9,15 @@ DATASET_NAME = 'caves'
 tokenizer = AutoTokenizer.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
 
 
-train= '../CAVES_data/train.csv'
-test = '../CAVES_data/test.csv'
-val = '../CAVES_data/val.csv'
+train= './CAVES_data/train.json'
+test = './CAVES_data/test.json'
+val = './CAVES_data/val.json'
 
 
 DATADIR = './data_' + DATASET_NAME 
 if not os.path.exists(DATADIR):
     print("Directory created:", DATADIR)
     os.makedirs(DATADIR)
-
 
 
 data = get_conditional_data(train, dataset=DATASET_NAME)
@@ -30,41 +29,45 @@ data = get_conditional_data(train, dataset=DATASET_NAME)
 
 train_data = conditional_union_data(data, 
                                     tokenizer,
-                                    max_span_only=True, 
-                                    is_bert=True,
+                                    # max_span_only=True, 
+                                    # is_bert=True,
                                     dataset=DATASET_NAME,
                                     use_none=True,
                                     num_neg_samples=5
                                     )
 
 with open(os.path.join(DATADIR, 'train_data.json'), 'w') as f:
-    json.dump(train_data, f, indent = 8)
-
+    tmp = json.dumps(train_data, indent = 8)
+    pos = tmp.index('"text":')
+    print(re.sub(r'(\d+,)\s+', r'\1 ', tmp[:pos]) + tmp[pos:] , file = f)
 
 
 
 data = get_conditional_data(val, dataset=DATASET_NAME)
 val_data = conditional_union_data(data, 
                                     tokenizer,
-                                    max_span_only=True, 
-                                    is_bert=True,
+                                    # max_span_only=True, 
+                                    # is_bert=True,
                                     dataset=DATASET_NAME,
                                     use_none=True,
                                     num_neg_samples=5
                                     )
 
 with open(os.path.join(DATADIR, 'val_data.json'), 'w') as f:
-    json.dump(val_data, f, indent = 8)
+    tmp = json.dumps(val_data, indent = 8)
+    pos = tmp.index('"text":')
+    print(re.sub(r'(\d+,)\s+', r'\1 ', tmp[:pos]) + tmp[pos:] , file = f)
+
 
 
 
 
 test_samples = get_test_data(test, # TEST CSV FILE LOCATION
                             tokenizer, 
-                            is_testing=True, # ALWAYS SET TO TRUE
-                            is_bert=True, # TRUE FOR BERT AND FALSE FOR ROBERTA AND OTHER MODELS.
+                            # is_bert=True, # TRUE FOR BERT AND FALSE FOR ROBERTA AND OTHER MODELS.
                             dataset=DATASET_NAME) 
 
 with open(os.path.join(DATADIR, 'test_data.json'), 'w') as f:
-    json.dump(test_samples, f, indent = 8)
+    tmp = json.dumps(test_samples, indent = 8)
+    print(re.sub(r'(\d+,)\s+', r'\1 ', tmp) , file = f)
 

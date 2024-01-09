@@ -22,26 +22,16 @@ def get_question(lab):
 
 
 
-# def fix_tokenizer_issue(keywords):
-#     corrected_keys = []
-#     for keys in keywords:
-#         temp = []
-#         for k in keys:
-#             #if k is not np.nan:
-#             m = ' '
-#             m += k
-#             temp.append(m)
-#             #else:
-#                 #temp.append(None)
-#         corrected_keys.append(temp)
-#     return corrected_keys
-
-
 def tokenize_and_map(text_words, tokenizer):
+    
+    assert text_words[0] == tokenizer.cls_token
+    tokenized_text = [tokenizer.cls_token_id]
     i = 1
-    tokenized_text = [tokenizer.eos_token_id]
     idx_map = []
-    for j, word in enumerate(text_words):
+
+    for j, word in enumerate(text_words[1:]):
+        word = re.sub("https://\S+", "HTTPURL", word)
+
         encoded_words = tokenizer.encode(word, add_special_tokens = False)
         tokenized_text += encoded_words
 
@@ -76,17 +66,12 @@ def get_conditional_data(filename, dataset):
 
 def conditional_union_data(data:list, 
                            tokenizer,
-                           max_span_only=True, 
-                           is_bert=False,
+                        #    max_span_only=True, 
+                        #    is_bert=False,
                            num_neg_samples=2,
                            dataset='caves',
                            use_none=False
                            ):
-    '''
-    data: list of dict with keys = ['tweet_text', 'spans', 'lables']
-    Given lbl1 and lbl2 are valid reasons, why is lbl3 also a reason for not taking vaccines?
-    Given lbl1 is reason, why is lbl2 also a reason for not taking vaccines?
-    '''
 
     if dataset == 'caves':
         ALL_LABELS = np.array(['none'] + sorted(['unnecessary', 'side-effect', 'ineffective', 'mandatory', 'pharma', 'political', 'conspiracy', 'rushed', 'country', 'ingredients', 'religious']))
@@ -96,52 +81,22 @@ def conditional_union_data(data:list,
         ALL_LABELS = np.array(['positive', 'neutral', 'negative'])
 
     tokenized_tweet_with_question, tweet_text, tweet_labels, tokenized_keywords, start_token, end_token = [], [], [], [], [], []
-    # total_highlights, keyword_spans = [], []
     
     for idx, dat in enumerate(data):
-        
-        # tweet = ' '
-        # tweet += dat['tweet_text']
-        
-        # tokenized_tweet = [preprocess_and_tokenize(tweet, tokenizer)]
-        # tokenized_tweet = [tokenized_tweet[0][:-1]]
-        
-        # keys = [dat['keyword']]
-        # keys = keyword_position(keys, tokenizer)
-        
-        # labels = dat['labels']
 
-        # if dataset == '14lap':
-        #     aspect = dat['aspect']
-        # else:
-        #     aspect = None
+        temp = [tokenizer.cls_token] + dat['text'] + [tokenizer.unk_token, tokenizer.sep_token]
 
-        # highlights11 = get_label_highlight(tokenized_tweet, keys, [labels], ALL_LABELS)
-
-        # keyword_spans11 = span_finder(highlights, use_only_max_length=max_span_only)
-
-        tweet = ' ' + tokenizer.eos_token + ' '.join(dat['text']) + ' '
+        tweet = ' '.join(temp) 
         labels = dat['labels']
+        tokenized_tweet, idx_map = tokenize_and_map(temp, tokenizer)
 
-        tokenized_tweet, idx_map = tokenize_and_map(dat['text'], tokenizer)
+        null_token_id = idx_map[len(dat['text'])]
         
-
-        if not is_bert:
-            tweet += ' <unk>'
-            tweet += '</s>'
-            tokenized_tweet[0].extend([1437,3,2]) # 1437=' ', <unk>=3, </s>=2
-            null_token_id = len(tokenized_tweet[0]) - 3
-        else:
-            tweet += ' [UNK] ' # token_id = 100
-            tweet += '[SEP]' # token_id = 102
-            tokenized_tweet[0].extend([100, 102])
-            null_token_id = len(tokenized_tweet[0]) - 2
-
         
         if labels[0] != 'none' and labels[0] != 'normal':           
             
-            original_tokenized_tweet = tokenized_tweet[0].copy()
-            tokenized_tweet = tokenized_tweet[0].copy()
+            original_tokenized_tweet = tokenized_tweet.copy()
+            tokenized_tweet = tokenized_tweet.copy()
             
             for lab in labels:
                 
@@ -149,23 +104,28 @@ def conditional_union_data(data:list,
                     if tup[0] != lab:
                         continue
 
+                    # print(tup)
+
                     question = get_question(lab)
                     # question = f'Why {lab} ?'
+                    question = tokenizer(question).input_ids[1:-1]
 
-                    for span in zip(tup[1]):
-                        question = tokenizer(question).input_ids[1:-1]
+                    for span in tup[1]:
                         tokenized_tweet.extend(question)
                         
                         tweet_text.append(tokenizer.decode(tokenized_tweet))
                         
                         tokenized_tweet_with_question.append(tokenized_tweet)
                         
+                        
                         tokenized_keywords.append(tokenizer.decode(tokenized_tweet[idx_map[span['start']]:idx_map[span['end']]]))
+                        # if re.sub("[^\w\d]", "", tokenized_keywords[-1].lower()) != re.sub("[^\w\d]", "", span["terms"].lower()) and '[UNK]' not in tokenized_keywords:
+                        #     print(tokenized_keywords[-1] + "\n" + span["terms"], end = "\n\n")
                         
                         tweet_labels.append(lab)
                         
                         start_token.append(idx_map[span['start']])
-                        end_token.append(idx_map[span['end']])
+                        end_token.append(idx_map[span['end']] - 1)
                         
                         tokenized_tweet = original_tokenized_tweet.copy()
 
@@ -200,7 +160,7 @@ def conditional_union_data(data:list,
                 
                 tokenized_tweet_with_question.append(tokenized_tweet)
                 
-                tokenized_keywords.append('')
+                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[null_token_id: null_token_id + 1]))
                 
                 tweet_labels.append(neg)
                 
@@ -209,8 +169,8 @@ def conditional_union_data(data:list,
                 
                 tokenized_tweet = original_tokenized_tweet.copy()
         else:
-            original_tokenized_tweet = tokenized_tweet[0].copy()
-            tokenized_tweet = tokenized_tweet[0].copy()
+            original_tokenized_tweet = tokenized_tweet.copy()
+            tokenized_tweet = tokenized_tweet.copy()
             
             if dataset == 'caves':
                 question = get_question('none')
@@ -227,7 +187,7 @@ def conditional_union_data(data:list,
             
             tokenized_tweet_with_question.append(tokenized_tweet)
             
-            tokenized_keywords.append('')
+            tokenized_keywords.append(tokenizer.decode(tokenized_tweet[0: 1]))
             
             tweet_labels.append(labels[0])
             
@@ -254,7 +214,7 @@ def conditional_union_data(data:list,
                 
                 tokenized_tweet_with_question.append(tokenized_tweet)
                 
-                tokenized_keywords.append('')
+                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[null_token_id: null_token_id + 1]))
                 
                 tweet_labels.append(neg)
                 
@@ -270,24 +230,11 @@ def conditional_union_data(data:list,
 
 
 
-# %% LOADING DATA
-
-# def fix_end_token(end_tokens, start_tokens):
-#     end_token = []
-#     for start, end in zip(start_tokens, end_tokens):
-#         start = int(start)
-#         end = int(end)
-#         if start == end: end_token.append(end)
-#         #elif end-start ==1: end_token.append(end)
-#         else: end_token.append(end-1)
-#     return end_token
-
-
 
 
 def get_test_data(testfile, 
                        tokenizer,  
-                       is_bert=False, 
+                    #    is_bert=False, 
                        data=None,
                        dataset='caves',
                        ALL_LABELS=None):
@@ -308,38 +255,17 @@ def get_test_data(testfile,
 
     for dat in data:
         
-        # tweet = ' '
-        # tweet += dat['tweet_text']
-        # tokenized_tweet = [preprocess_and_tokenize(tweet, tokenizer)[:-1]]
+        temp = [tokenizer.cls_token] + dat['text'] + [tokenizer.unk_token, tokenizer.sep_token]
 
-        # keys = [dat['keyword']]
-        # keys = keyword_position(keys, tokenizer)
-
-        # labels = dat['labels']
-
-        # highlights = get_label_highlight(tokenized_tweet, keys, [labels], ALL_LABELS)
-
-        # keyword_spans = span_finder(highlights, use_only_max_length=False)
-        
-        tweet = ' ' + tokenizer.eos_token + ' '.join(dat['text']) + ' '
+        tweet = ' '.join(temp) 
         labels = dat['labels']
+        tokenized_tweet, idx_map = tokenize_and_map(temp, tokenizer)
 
-        tokenized_tweet, idx_map = tokenize_and_map(dat['text'], tokenizer)
+        null_token_id = idx_map[len(dat['text'])]
+        
 
-
-        if not is_bert:
-            tweet += ' <unk>'
-            tweet += '</s>'
-            tokenized_tweet[0].extend([1437,3,2])
-            null_token_id = len(tokenized_tweet[0]) - 2 ## <unk> token id
-        else:
-            tweet += ' [UNK] ' # token_id = 100
-            tweet += '[SEP]' # token_id = 102
-            tokenized_tweet[0].extend([100, 102])
-            null_token_id = len(tokenized_tweet[0]) - 2
-
-        original_tokenized_tweet = tokenized_tweet[0].copy()
-        tokenized_tweet = tokenized_tweet[0].copy()
+        original_tokenized_tweet = tokenized_tweet.copy()
+        tokenized_tweet = tokenized_tweet.copy()
         
         questions_per_sample = {}
         questions_per_sample['tokenized_question'] = []
@@ -358,18 +284,15 @@ def get_test_data(testfile,
             
             ## if lab is actually a ground truth label
             if lab in labels and (lab != 'none' and lab != 'normal'):
-                # for high, spans in zip(highlights, keyword_spans):
-                    # for tup, span in zip(high, spans):
+                
                     for tup in dat['tuples']:
                         if tup[0] != lab:
                             continue
 
                         union_key = []
                         for span in tup[1]:
-                            union_key.append(tokenized_tweet[idx_map[span['start']]: idx_map[span['end']]])
+                            union_key.extend(tokenized_tweet[idx_map[span['start']]: idx_map[span['end']]])
                             
-                        # union_key = [tokenized_tweet[i] for i in range(len(union_key_binary)) if union_key_binary[i] !=0]
-                        
                         questions_per_sample['gt_keywords'].append(tokenizer.decode(union_key))    
                             
                         tokenized_tweet.extend(question)
