@@ -65,7 +65,7 @@ def train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
             optimizer.zero_grad()
             
             # TRAINING STEP
-            for step, batch in enumerate(train_dataloader):
+            for step, batch in enumerate(tqdm(train_dataloader, ncols = 100)):
                 #pdb.set_trace()
                 batch = tuple(t.to(params['device']) for t in batch)
                 b_input_ids, b_attn_mask, b_start_ids, b_end_ids = batch
@@ -107,6 +107,6 @@ def train(model, train_dataloader, val_dataloader, optimizer, scheduler, params)
             with torch.no_grad():
                 lowest_eval_loss = validate(val_dataloader, model, params, actual_epoch, n_best,
                                             max_answer_length, lowest_eval_loss)
-            print("Train loss after Epoch {} : {}".format(actual_epoch, epoch_train_loss))
+            print("\nLoss after Epoch %d : %0.6f, %0.6f"%(actual_epoch, epoch_train_loss, lowest_eval_loss))
         print('\n')
 

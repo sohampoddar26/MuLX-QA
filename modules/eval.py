@@ -24,7 +24,7 @@ def test_model(data:list, model, tokenizer, params):
     # correct count is for both label and keyword matching (if jacc > 0.5)
     true_count, pred_count, correct_count = 0, 0, 0
     
-    for idx, sample in tqdm(enumerate(data), ncols = 100):
+    for idx, sample in enumerate(tqdm(data, ncols = 100)):
         
         pred_label = [1 for i in range(len(ALL_LABELS))]
         true_label = [0 for i in range(len(ALL_LABELS))]

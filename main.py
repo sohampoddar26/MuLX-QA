@@ -8,10 +8,10 @@ from modules.train import train
 from modules.eval import evaluate
 
 # CHOOSE THE PARAMS
-DATASET_NAME = 'caves' # 'hatexplain'
+DATASET_NAME = 'caves'
 
 
-DATADIR = './data_' + DATASET_NAME
+DATADIR = './data_ctb5_' + DATASET_NAME
 
 #########################################################
 #########################################################
@@ -21,22 +21,22 @@ DATADIR = './data_' + DATASET_NAME
 
 
 params = {}
-params['device'] = 'cuda'
+params['device'] = 'cuda:0'
 params['dataset'] = DATASET_NAME # THE DATASET BEING USED.
-params['batch_size'] = 32 # DO NOT CHANGE THIS, MAKES CHANGES TO THE GRADIENT ACCUMULATION STEPS FOR INCREASING THE BATCH SIZE
-params['learning_rate'] = 2e-05 #2e-5 # DEFAULT IS 3e-05
+params['batch_size'] = 16 
+params['learning_rate'] = 1e-05 
 params['epsilon'] = 1e-8
 params['weight_decay'] = 0 #0.01
-params['num_epochs'] = 10 
+params['num_epochs'] = 6 
 params['n_best'] = 20 # NUMBER OF TOP CANDIDATES TO CONSIDER FOR START + END INDEX LOGIT CALCULATION, DEFAULT = 10 (preferably do not lower)
 params['max_answer_length'] = 20 # THE MAXIMUM DIFFERENCE BETWEEN THE START AND END INDEX (CHANGES BASED ON THE DATASET BEING USED)
-params['num_grad_acc_step'] = 2
+params['num_grad_acc_step'] = 4
 params['num_neg_samples'] = 5 # NUMBER OF NEGATIVE SAMPLES BEING USED PER SAMPLE FOR TRAINING (SHOULD BE EQUAL TO THE ONE USED DURING INPUT FILE CREATION)
-params['modelname'] = 'ct_bert' # NAME USED TO SAVE THE MODEL
+params['modelname'] = 'ctb' # NAME USED TO SAVE THE MODEL
 
 
  
-model_save_path = './data_%s/models/%s_neg_%d_BS_%d/'%(params['dataset'], params['modelname'], params['num_neg_samples'], params['batch_size'] * params['num_grad_acc_step'])
+model_save_path = './%s/models/%s_neg_%d_BS_%d/'%(DATADIR, params['modelname'], params['num_neg_samples'], params['batch_size'] * params['num_grad_acc_step'])
                                
 
 if not os.path.exists(model_save_path):
@@ -51,11 +51,12 @@ params['model_save_path'] = model_save_path
 #########################################################
 #########################################################
 
-#tokenizer = AutoTokenizer.from_pretrained('roberta-large')
+# tokenizer = AutoTokenizer.from_pretrained('roberta-base')
 tokenizer = AutoTokenizer.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
 
 seed()
 
+# model = AutoModelForQuestionAnswering.from_pretrained('roberta-base')
 model = AutoModelForQuestionAnswering.from_pretrained('digitalepidemiologylab/covid-twitter-bert-v2')
 model = model.to(params['device'])
 

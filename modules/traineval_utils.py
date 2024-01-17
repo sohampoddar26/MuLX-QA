@@ -18,12 +18,12 @@ def save_model(epoch, model, loss, model_save_path):
                   'loss': loss
                   }
     torch.save(checkpoint, model_save_path)
-    print("Saving model at iteration {} with validation Loss {}".format(epoch, loss))
+    print("\nSaving model at iteration {} with validation Loss {}".format(epoch, loss))
 
 def load_model(model, model_save_path):
     checkpoint = torch.load(model_save_path)
     model.load_state_dict(checkpoint['state_dict'])
-    print(f"Loaded Model from epoch {checkpoint['epoch']}")
+    print(f"\nLoaded Model from epoch {checkpoint['epoch']}")
     
     return model
 

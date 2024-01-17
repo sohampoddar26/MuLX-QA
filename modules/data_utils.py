@@ -29,14 +29,18 @@ def tokenize_and_map(text_words, tokenizer):
     i = 1
     idx_map = []
 
-    for j, word in enumerate(text_words[1:]):
+    for j, word in enumerate(text_words[1:-1]):
         word = re.sub("https://\S+", "HTTPURL", word)
 
-        encoded_words = tokenizer.encode(word, add_special_tokens = False)
+        encoded_words = tokenizer.encode(' ' + word, add_special_tokens = False)
         tokenized_text += encoded_words
 
         idx_map.append(i)
         i += len(encoded_words)
+
+    assert text_words[-1] == tokenizer.sep_token
+    tokenized_text.append(tokenizer.sep_token_id)
+    idx_map.append(i)
 
     return tokenized_text, idx_map
         
@@ -86,11 +90,11 @@ def conditional_union_data(data:list,
 
         temp = [tokenizer.cls_token] + dat['text'] + [tokenizer.unk_token, tokenizer.sep_token]
 
-        tweet = ' '.join(temp) 
+        #tweet = ' '.join(temp) 
         labels = dat['labels']
         tokenized_tweet, idx_map = tokenize_and_map(temp, tokenizer)
 
-        null_token_id = idx_map[len(dat['text'])]
+        null_token_id = idx_map[len(dat['text']) + 1] -1
         
         
         if labels[0] != 'none' and labels[0] != 'normal':           
@@ -160,7 +164,7 @@ def conditional_union_data(data:list,
                 
                 tokenized_tweet_with_question.append(tokenized_tweet)
                 
-                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[null_token_id: null_token_id + 1]))
+                tokenized_keywords.append(tokenizer.decode(tokenized_tweet[null_token_id : null_token_id + 1]))
                 
                 tweet_labels.append(neg)
                 
@@ -257,7 +261,7 @@ def get_test_data(testfile,
         
         temp = [tokenizer.cls_token] + dat['text'] + [tokenizer.unk_token, tokenizer.sep_token]
 
-        tweet = ' '.join(temp) 
+        #tweet = ' '.join(temp) 
         labels = dat['labels']
         tokenized_tweet, idx_map = tokenize_and_map(temp, tokenizer)
 
