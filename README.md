@@ -1,6 +1,6 @@
 # MuLX-QA
 This repository contains codes for the model introduced in the paper titled ***"MuLX-QA: Classifying Multi-Labels and Extracting Rationale Spans in Social Media Posts"***
-under revision for the Transactions on the Web (TWeb) Journal.
+accepted for the Transactions on the Web (TWeb) Journal: [Link to paper](https://dl.acm.org/doi/10.1145/3653303)
 
 ## Requirements
 Get the dataset here: [CAVES Data](https://github.com/sohampoddar26/caves-data)
@@ -21,4 +21,17 @@ python main.py
 
 
 ## Citation
-TBU
+If you use our data, please cite the following paper:
+```
+@article{Poddar24MuLX-QA,
+author = {Poddar, Soham and Mukherjee, Rajdeep and Samad, Azlaan Mustafa and Ganguly, Niloy and Ghosh, Saptarshi},
+title = {MuLX-QA: Classifying Multi-Labels and Extracting Rationale Spans in Social Media Posts},
+year = {2024},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+issn = {1559-1131},
+url = {https://doi.org/10.1145/3653303},
+doi = {10.1145/3653303},
+journal = {ACM Trans. Web}
+}
+```
