@@ -21,7 +21,7 @@ python main.py
 
 
 ## Citation
-If you use our data, please cite the following paper:
+If you find our work useful, please cite the following paper:
 ```
 @article{Poddar24MuLX-QA,
 author = {Poddar, Soham and Mukherjee, Rajdeep and Samad, Azlaan Mustafa and Ganguly, Niloy and Ghosh, Saptarshi},
@@ -32,6 +32,17 @@ address = {New York, NY, USA},
 issn = {1559-1131},
 url = {https://doi.org/10.1145/3653303},
 doi = {10.1145/3653303},
-journal = {ACM Trans. Web}
+journal = {ACM Transactions on the Web}
 }
 ```
+
+If you use the CAVES dataset, cite the following paper:
+```
+@inproceedings{poddar2022caves,
+  title={CAVES: A dataset to facilitate Explainable Classification and Summarization of Concerns towards COVID Vaccines},
+  author={Poddar, Soham and Samad, Azlaan Mustafa and Mukherjee, Rajdeep and Ganguly, Niloy and Ghosh, Saptarshi},
+  booktitle={Proceedings of the 45th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+  year={2022}
+}
+```
+
