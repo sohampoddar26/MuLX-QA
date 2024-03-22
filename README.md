@@ -23,7 +23,7 @@ python main.py
 ## Citation
 If you find our work useful, please cite the following paper:
 ```
-@article{Poddar24MuLX-QA,
+@article{poddar2024MuLX-QA,
 author = {Poddar, Soham and Mukherjee, Rajdeep and Samad, Azlaan Mustafa and Ganguly, Niloy and Ghosh, Saptarshi},
 title = {MuLX-QA: Classifying Multi-Labels and Extracting Rationale Spans in Social Media Posts},
 year = {2024},
